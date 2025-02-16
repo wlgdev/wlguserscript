@@ -5,8 +5,8 @@
     "build:dev:twitch": "rolldown src/wlgtwitch/main.ts --format esm --file ./dist/wlgtwitch.user.js --watch"
   },
   "imports": {
-    "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.32",
-    "rolldown": "npm:rolldown@^1.0.0-beta.3"
+    "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.33",
+    "rolldown": "npm:rolldown@^1.0.0-beta.3-commit.fc7dd8c"
   },
   "compilerOptions": {
     "lib": ["deno.ns", "dom", "dom.iterable", "esnext"]

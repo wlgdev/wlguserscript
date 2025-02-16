@@ -52,6 +52,7 @@ export class Twitch {
     // let cur_offset = start;
     let ncursor = "";
     let br = false;
+    let prev = -Infinity;
 
     while (!br) {
       const [res] = await Twitch.gql([
@@ -61,11 +62,14 @@ export class Twitch {
       ]);
 
       for (const { node, cursor } of res.data.video.comments.edges) {
-        if (node.contentOffsetSeconds > end) {
+        if (
+          node.contentOffsetSeconds > end || node.contentOffsetSeconds < prev
+        ) {
           br = true;
           break;
         }
         ncursor = cursor;
+        prev = node.contentOffsetSeconds;
 
         let message = "";
         const emotes = [];

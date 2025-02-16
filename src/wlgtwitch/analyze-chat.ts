@@ -18,17 +18,19 @@ export interface AnalysisResult {
   total_frames: number;
 }
 
+type AnalysisResultItem = {
+  value: number;
+  deviation: number;
+  deviation_abs: number;
+  offset: number;
+};
+
 export function analyzeChat(
   chatHistory: TwitchChatMessage[],
   timeframe_seconds = 60,
 ): AnalysisResult {
   const items: {
-    [key: number]: {
-      value: number;
-      deviation: number;
-      deviation_abs: number;
-      offset: number;
-    };
+    [key: number]: AnalysisResultItem;
   } = {};
 
   let max = 0;
@@ -57,6 +59,68 @@ export function analyzeChat(
     }
   }
 
+  return {
+    items,
+    max,
+    min,
+    total_messages,
+    ...metaStats(items),
+  };
+}
+
+export function analyzeChatLUL(
+  chatHistory: TwitchChatMessage[],
+  timeframe_seconds = 60,
+): AnalysisResult {
+  const items: {
+    [key: number]: AnalysisResultItem;
+  } = {};
+
+  let max = 0;
+  let min = Infinity;
+  let total_messages = 0;
+
+  for (const message of chatHistory) {
+    total_messages++;
+    const timeframe = Math.floor(message.offset / timeframe_seconds);
+
+    if (items[timeframe]) {
+      for (const emote of message.emotes) {
+        if (emote.text === "LUL") {
+          items[timeframe].value++;
+        }
+      }
+      if (items[timeframe].value > max) {
+        max = items[timeframe].value;
+      }
+      if (items[timeframe].value < min) {
+        min = items[timeframe].value;
+      }
+    } else {
+      items[timeframe] = {
+        value: 1,
+        deviation: 0,
+        deviation_abs: 0,
+        offset: message.offset,
+      };
+    }
+  }
+
+  return {
+    items,
+    max,
+    min,
+    total_messages,
+    ...metaStats(items),
+  };
+}
+
+function metaStats(items: { [key: number]: AnalysisResultItem }): {
+  avg: number;
+  max_deviation: number;
+  min_deviation: number;
+  total_frames: number;
+} {
   const messageCounts = Object.values(items).map((item) => item.value);
   const numtimeframes = messageCounts.length;
 
@@ -85,13 +149,9 @@ export function analyzeChat(
   }
 
   return {
-    items,
     avg,
-    max,
-    min,
     max_deviation,
     min_deviation,
-    total_messages,
     total_frames,
   };
 }

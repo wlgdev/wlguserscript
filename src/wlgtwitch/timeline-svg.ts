@@ -9,7 +9,7 @@ export function createTimelineSVG(
   const rectHeight = svgHeight;
 
   let svgString =
-    `<svg id="chat-svg" width="100%" height="${svgHeight}px" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none" style="display: block;">`;
+    `<svg class="chat-svg" width="100%" height="${svgHeight}px" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none" style="display: block;">`;
 
   let index = 0;
   for (const key in chat.items) {

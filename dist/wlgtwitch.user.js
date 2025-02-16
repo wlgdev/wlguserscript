@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         wlgtwitch
 // @namespace    shevernitskiy
-// @version      0.2
+// @version      0.3
 // @description  try to take over the world!
 // @author       shevernitskiy
 // @match        https://dashboard.twitch.tv/u/*/content/video-producer/highlighter/*
@@ -29,6 +29,43 @@ function analyzeChat(chatHistory, timeframe_seconds = 60) {
         offset: message.offset,
       };
   }
+  return {
+    items,
+    max,
+    min,
+    total_messages,
+    ...metaStats(items),
+  };
+}
+function analyzeChatLUL(chatHistory, timeframe_seconds = 60) {
+  const items = {};
+  let max = 0;
+  let min = Infinity;
+  let total_messages = 0;
+  for (const message of chatHistory) {
+    total_messages++;
+    const timeframe = Math.floor(message.offset / timeframe_seconds);
+    if (items[timeframe]) {
+      for (const emote of message.emotes) if (emote.text === "LUL") items[timeframe].value++;
+      if (items[timeframe].value > max) max = items[timeframe].value;
+      if (items[timeframe].value < min) min = items[timeframe].value;
+    } else
+      items[timeframe] = {
+        value: 1,
+        deviation: 0,
+        deviation_abs: 0,
+        offset: message.offset,
+      };
+  }
+  return {
+    items,
+    max,
+    min,
+    total_messages,
+    ...metaStats(items),
+  };
+}
+function metaStats(items) {
   const messageCounts = Object.values(items).map((item) => item.value);
   const numtimeframes = messageCounts.length;
   let avg = 0;
@@ -47,13 +84,9 @@ function analyzeChat(chatHistory, timeframe_seconds = 60) {
     if (items[timeframe_key].deviation < min_deviation) min_deviation = items[timeframe_key].deviation;
   }
   return {
-    items,
     avg,
-    max,
-    min,
     max_deviation,
     min_deviation,
-    total_messages,
     total_frames,
   };
 }
@@ -88,6 +121,7 @@ var Twitch = class Twitch {
   async *vodChat(vod_id, start = 0, end = Infinity) {
     let ncursor = "";
     let br = false;
+    let prev = -Infinity;
     while (!br) {
       const [res] = await Twitch.gql([
         ncursor === ""
@@ -95,11 +129,12 @@ var Twitch = class Twitch {
           : Twitch.request.VideoCommentsByCursor(vod_id, ncursor),
       ]);
       for (const { node, cursor } of res.data.video.comments.edges) {
-        if (node.contentOffsetSeconds > end) {
+        if (node.contentOffsetSeconds > end || node.contentOffsetSeconds < prev) {
           br = true;
           break;
         }
         ncursor = cursor;
+        prev = node.contentOffsetSeconds;
         let message = "";
         const emotes = [];
         for (const fragment of node.message.fragments) {
@@ -173,7 +208,7 @@ async function downloadChat(channel, vod_id, total_length, on_progress) {
 function createTimelineSVG(chat, svgWidth = 4e3, svgHeight = 30) {
   const rectWidth = svgWidth / chat.total_frames;
   const rectHeight = svgHeight;
-  let svgString = `<svg id="chat-svg" width="100%" height="${svgHeight}px" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none" style="display: block;">`;
+  let svgString = `<svg class="chat-svg" width="100%" height="${svgHeight}px" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none" style="display: block;">`;
   let index = 0;
   for (const key in chat.items) {
     const deviation = chat.items[key].deviation;
@@ -234,7 +269,7 @@ var CacheDB = class {
   getItem(key) {
     console.log("getItem", key);
     return new Promise((resolve, reject) => {
-      if (!this.db) return resolve(undefined);
+      if (!this.db) return resolve(void 0);
       const transaction = this.db.transaction([this.table], "readonly");
       const objectStore = transaction.objectStore(this.table);
       const request = objectStore.get(key);
@@ -297,10 +332,13 @@ const state = {
   chat: [],
   status: "chat-status",
   timeline: "chat-timeline",
+  timeline_lul: "chat-timeline-lul",
   analyzed: {},
+  analyzed_lul: {},
   svg: "",
+  svg_lul: "",
   scale: "Полная длина",
-  cache: undefined,
+  cache: void 0,
   mode: "default",
   offset_container_left: Infinity,
   offset_container_width: -Infinity,
@@ -371,6 +409,8 @@ function analyzeAndGenerateSVG() {
   console.debug("analyzeAndGenerateSVG");
   state.analyzed = analyzeChat(state.chat);
   state.svg = createTimelineSVG(state.analyzed);
+  state.analyzed_lul = analyzeChatLUL(state.chat);
+  state.svg_lul = createTimelineSVG(state.analyzed_lul);
 }
 function attachSVGToTimeline() {
   console.debug("attachSVGToTimeline");
@@ -381,8 +421,16 @@ function attachSVGToTimeline() {
     timeline.id = state.timeline;
   }
   timeline.innerHTML = `<div style="width: 100%;">${state.svg}</div>`;
+  let timeline_lul = document.getElementById(state.timeline_lul);
+  if (!timeline_lul) {
+    const empty_timeline = document.querySelector(SELECTOR.EMPTY_TIMELINE);
+    timeline_lul = empty_timeline.cloneNode(false);
+    timeline_lul.id = state.timeline_lul;
+  }
+  timeline_lul.innerHTML = `<div style="width: 100%;">${state.svg_lul}</div>`;
   const timeline_container = document.querySelector(SELECTOR.TIMELINE_CONTAINER);
   timeline_container.appendChild(timeline);
+  timeline_container.appendChild(timeline_lul);
 }
 function scaleMutationObserver() {
   const parentElement = document.querySelector(
@@ -434,17 +482,18 @@ function rullerMutationObserver() {
   }
   function changeSVGViewBox() {
     const WIDTH = 4e3;
-    const el = document.getElementById("chat-svg");
-    if (!el) return;
-    if (state.offset_container_width >= 400) {
-      const start_x = WIDTH * (state.ruller_start / state.total_duration);
-      const width_x = WIDTH * ((state.ruller_end - state.ruller_start) / state.total_duration);
-      el.setAttribute("viewBox", `${start_x} 0 ${width_x} 30`);
-      console.debug("changeSVGViewBox", `${start_x} 0 ${width_x} 30`);
-    } else {
-      el.setAttribute("viewBox", `0 0 ${WIDTH} 30`);
-      console.debug("changeSVGViewBox Default", `0 0 ${WIDTH} 30`);
-    }
+    const els = document.querySelectorAll(".chat-svg");
+    if (!els || els.length === 0) return;
+    for (const el of els)
+      if (state.offset_container_width >= 400) {
+        const start_x = WIDTH * (state.ruller_start / state.total_duration);
+        const width_x = WIDTH * ((state.ruller_end - state.ruller_start) / state.total_duration);
+        el.setAttribute("viewBox", `${start_x} 0 ${width_x} 30`);
+        console.debug("changeSVGViewBox", `${start_x} 0 ${width_x} 30`);
+      } else {
+        el.setAttribute("viewBox", `0 0 ${WIDTH} 30`);
+        console.debug("changeSVGViewBox Default", `0 0 ${WIDTH} 30`);
+      }
   }
 }
 

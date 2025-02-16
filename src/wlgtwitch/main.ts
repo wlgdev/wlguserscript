@@ -1,11 +1,9 @@
 // deno-lint-ignore-file no-window
-import { AnalysisResult, analyzeChat } from "./analyze-chat.ts";
+import { AnalysisResult, analyzeChat, analyzeChatLUL } from "./analyze-chat.ts";
 import { downloadChat, TwitchChatMessage } from "./chat-downloader.ts";
 import { createTimelineSVG } from "./timeline-svg.ts";
 import { duration } from "./utils.ts";
 import { CacheDB } from "./cache.ts";
-
-// const DEBUG = false;
 
 console.log("wlgtwitch.ts");
 
@@ -35,8 +33,11 @@ const state = {
   chat: [] as TwitchChatMessage[],
   status: "chat-status",
   timeline: "chat-timeline",
+  timeline_lul: "chat-timeline-lul",
   analyzed: {} as AnalysisResult,
+  analyzed_lul: {} as AnalysisResult,
   svg: "",
+  svg_lul: "",
   scale: "Полная длина",
   cache: undefined as unknown as CacheDB<TwitchChatMessage[]>,
   mode: "default",
@@ -61,26 +62,17 @@ function init() {
   state.vod_id = path.at(-1)!;
 
   // FIXME: DEBUG
-  // if (DEBUG) {
-  //   state.channel = "welovegames";
-  //   state.vod_id = "2379168053";
-  //   state.total_duration = 36815;
-  //   state.ruller_end = state.total_duration;
-  // }
+  // state.channel = "welovegames";
+  // state.vod_id = "2355792756";
+  // state.total_duration = 18939;
+  // state.ruller_end = state.total_duration;
 
   state.cache = new CacheDB<TwitchChatMessage[]>("wlgtwitch", "chat");
-  // state.chat = await state.cache.getItem(state.vod_id) ?? [];
 
   injectControls();
   scaleMutationObserver();
   rullerMutationObserver();
   setTimeout(async () => await tryLoadFromCache(), 500);
-
-  // FIXME: DEBUG
-  // if (DEBUG) {
-  //   state.total_duration = 1843;
-  //   state.ruller_end = state.total_duration;
-  // }
 }
 
 function injectControls() {
@@ -140,12 +132,19 @@ async function tryLoadFromCache() {
   status.textContent = `из кэша ${chat.length}`;
   analyzeAndGenerateSVG();
   attachSVGToTimeline();
+
+  // FIXME: DEBUG
+  // state.total_duration = 1843;
+  // state.ruller_end = state.total_duration;
 }
 
 function analyzeAndGenerateSVG() {
   console.debug("analyzeAndGenerateSVG");
   state.analyzed = analyzeChat(state.chat);
   state.svg = createTimelineSVG(state.analyzed);
+
+  state.analyzed_lul = analyzeChatLUL(state.chat);
+  state.svg_lul = createTimelineSVG(state.analyzed_lul);
 }
 
 function attachSVGToTimeline() {
@@ -159,10 +158,20 @@ function attachSVGToTimeline() {
 
   timeline.innerHTML = `<div style="width: 100%;">${state.svg}</div>`;
 
+  let timeline_lul = document.getElementById(state.timeline_lul);
+  if (!timeline_lul) {
+    const empty_timeline = document.querySelector(SELECTOR.EMPTY_TIMELINE)!;
+    timeline_lul = empty_timeline.cloneNode(false) as HTMLElement;
+    timeline_lul.id = state.timeline_lul;
+  }
+
+  timeline_lul.innerHTML = `<div style="width: 100%;">${state.svg_lul}</div>`;
+
   const timeline_container = document.querySelector(
     SELECTOR.TIMELINE_CONTAINER,
   )!;
   timeline_container.appendChild(timeline);
+  timeline_container.appendChild(timeline_lul);
 }
 
 function scaleMutationObserver() {
@@ -237,18 +246,20 @@ function rullerMutationObserver() {
   function changeSVGViewBox() {
     const WIDTH = 4000;
 
-    const el = document.getElementById("chat-svg");
-    if (!el) return;
-    if (state.offset_container_width >= 400) {
-      const start_x = WIDTH * (state.ruller_start / state.total_duration);
-      const width_x = WIDTH *
-        ((state.ruller_end - state.ruller_start) / state.total_duration);
-      el.setAttribute("viewBox", `${start_x} 0 ${width_x} 30`);
+    const els = document.querySelectorAll(".chat-svg");
+    if (!els || els.length === 0) return;
+    for (const el of els) {
+      if (state.offset_container_width >= 400) {
+        const start_x = WIDTH * (state.ruller_start / state.total_duration);
+        const width_x = WIDTH *
+          ((state.ruller_end - state.ruller_start) / state.total_duration);
+        el.setAttribute("viewBox", `${start_x} 0 ${width_x} 30`);
 
-      console.debug("changeSVGViewBox", `${start_x} 0 ${width_x} 30`);
-    } else {
-      el.setAttribute("viewBox", `0 0 ${WIDTH} 30`);
-      console.debug("changeSVGViewBox Default", `0 0 ${WIDTH} 30`);
+        console.debug("changeSVGViewBox", `${start_x} 0 ${width_x} 30`);
+      } else {
+        el.setAttribute("viewBox", `0 0 ${WIDTH} 30`);
+        console.debug("changeSVGViewBox Default", `0 0 ${WIDTH} 30`);
+      }
     }
   }
 }
