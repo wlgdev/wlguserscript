@@ -1,8 +1,8 @@
 {
   "lock": false,
   "tasks": {
-    "build:twitch": "rolldown src/wlgtwitch/main.ts --format esm --file ./dist/wlgtwitch.js",
-    "build:dev:twitch": "rolldown src/wlgtwitch/main.ts --format esm --file ./dist/wlgtwitch.js --watch"
+    "build:twitch": "rolldown src/wlgtwitch/main.ts --format esm --file ./dist/wlgtwitch.user.js",
+    "build:dev:twitch": "rolldown src/wlgtwitch/main.ts --format esm --file ./dist/wlgtwitch.user.js --watch"
   },
   "imports": {
     "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.32",
