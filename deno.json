@@ -1,0 +1,15 @@
+{
+  "lock": false,
+  "tasks": {
+    "build:twitch": "rolldown src/wlgtwitch/main.ts --format esm --file ./dist/wlgtwitch.js",
+    "build:dev:twitch": "rolldown src/wlgtwitch/main.ts --format esm --file ./dist/wlgtwitch.js --watch"
+  },
+  "imports": {
+    "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.32",
+    "rolldown": "npm:rolldown@^1.0.0-beta.3"
+  },
+  "compilerOptions": {
+    "lib": ["deno.ns", "dom", "dom.iterable", "esnext"]
+  },
+  "exclude": ["dist"]
+}
