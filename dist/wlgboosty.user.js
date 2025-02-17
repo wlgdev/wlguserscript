@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         wlgboosty
 // @namespace    shevernitskiy
-// @version      0.2
+// @version      0.3
 // @description  try to take over the world!
 // @author       shevernitskiy
 // @match        https://boosty.to/*
@@ -19,16 +19,8 @@ if (document.readyState === "loading") {
 function injectMenu() {
   for (const post of document.querySelectorAll("[class^=Post_root]")) {
     const post_id = post.attributes.getNamedItem("data-post-id").nodeValue;
-    const videos = Array.from(post.querySelectorAll("[class^=VideoBlock_root]")).map((item) => {
-      return {
-        id: item.attributes.getNamedItem("id").nodeValue.replaceAll("video-", ""),
-        length: item
-          .querySelector(".shadow-root-container")
-          ?.shadowRoot.querySelector('[data-testid="thumb-timer"]')
-          ?.textContent.trim(),
-      };
-    });
-    if (!videos.length) continue;
+    const videos = Array.from(post.querySelectorAll("[class^=VideoBlock_root]"));
+    if (!videos.length || videos.length === 0) continue;
     const header = post.querySelector("[class^=BasePostHeader_headerRightBlock]");
     const lock = header.querySelector("[class^=PostAccessLabel_root]");
     if (lock) {
@@ -41,12 +33,21 @@ function injectMenu() {
     div.style.padding = "10px";
     div.style.cursor = "pointer";
     div.style.color = "#f15f2c";
-    div.addEventListener("click", () => openDialog(post_id, videos));
+    div.addEventListener("click", () => openDialog(post_id, post));
     header.prepend(div);
   }
 }
 
-function openDialog(post_id, videos) {
+function openDialog(post_id, post) {
+  const videos = Array.from(post.querySelectorAll("[class^=VideoBlock_root]")).map((item) => {
+    return {
+      id: item.attributes.getNamedItem("id").nodeValue.replaceAll("video-", ""),
+      length: item
+        .querySelector(".shadow-root-container")
+        ?.shadowRoot.querySelector('[data-testid="thumb-timer"]')
+        ?.textContent.trim(),
+    };
+  });
   const app = document.querySelector("[class^=App_app]");
 
   const dialog = document.createElement("div");
@@ -126,12 +127,25 @@ function openDialog(post_id, videos) {
 
       const wrapped = [];
       div_wrapped.innerHTML = "";
+      const user = window.location.href.split("/").at(3);
+
+      function createTimecodeLine(offset, video_id, desc) {
+        const p = document.createElement("p");
+        p.style.margin = "0";
+        const a = document.createElement("a");
+        a.href = `https://boosty.to/${user}/posts/${post_id}?t=${offset}&tmid=${video_id}`;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.text = duration(offset);
+        p.innerHTML = `&nbsp;– ${desc}`;
+        p.prepend(a);
+        return p;
+      }
 
       let prev_offset = 0;
       let cur_offset_limit = offset(videos[0].length);
       let cur_offset_index = 0;
-
-      const user = window.location.href.split("/").at(3);
+      let prev_item = {};
 
       for (const item of parseTimecodes(timecodes)) {
         if (item.offset > cur_offset_limit) {
@@ -141,21 +155,13 @@ function openDialog(post_id, videos) {
           if (cur_offset_index >= videos.length) {
             cur_offset_index = videos.length - 1;
           }
+          div_wrapped.append(document.createElement("hr"));
+          div_wrapped.append(createTimecodeLine(0, videos[cur_offset_index].id, prev_item.desc));
         }
 
         wrapped.push(`${item.time} – ${item.desc} [${cur_offset_index + 1}]`);
-        const p = document.createElement("p");
-        p.style.margin = "0";
-        const a = document.createElement("a");
-        a.href = `https://boosty.to/${user}/posts/${post_id}?t=${item.offset - prev_offset}&tmid=${
-          videos[cur_offset_index].id
-        }`;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.text = item.time;
-        p.innerHTML = `&nbsp;– ${item.desc}`;
-        p.prepend(a);
-        div_wrapped.append(p);
+        div_wrapped.append(createTimecodeLine(item.offset - prev_offset, videos[cur_offset_index].id, item.desc));
+        prev_item = item;
       }
     }
   }
@@ -201,4 +207,13 @@ function offset(time) {
     pow++;
   }
   return offset;
+}
+
+function duration(length) {
+  const hours = ~~(length / 3600);
+  const minutes = ~~((length - hours * 3600) / 60);
+  const seconds = ~~(length - hours * 3600 - minutes * 60);
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+    .toString()
+    .padStart(2, "0")}`;
 }
