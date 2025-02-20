@@ -110,6 +110,10 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     event.stopPropagation();
     const slug = window.navigation.currentEntry.url.split("/").at(-1);
+    const chat_input =
+      document.querySelector('textarea[data-a-target="chat-input"]')?.value ??
+      document.querySelector('[class="chat-wysiwyg-input__editor"] span[data-slate-string="true"]')?.textContent ??
+      "";
     const twitch = new Twitch(slug);
     if (window.hottwitch.id === "" || window.hottwitch.name !== slug) {
       console.log(window.hottwitch);
@@ -117,9 +121,9 @@ document.addEventListener("keydown", (event) => {
         window.hottwitch.id = id;
         window.hottwitch.name = slug;
         console.log(window.hottwitch);
-        twitch.sendMessage(HOTKEYS[event.code]);
+        twitch.sendMessage(`${chat_input.trim()} ${HOTKEYS[event.code]}`);
       });
-    } else twitch.sendMessage(HOTKEYS[event.code]);
+    } else twitch.sendMessage(`${chat_input.trim()} ${HOTKEYS[event.code]}`);
   }
 });
 
