@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         wlghottwitch
 // @namespace    shevernitskiy
-// @version      0.1
+// @version      0.2
 // @description  try to take over the world!
 // @author       shevernitskiy
 // @match        https://twitch.tv/*
@@ -115,15 +115,13 @@ document.addEventListener("keydown", (event) => {
       document.querySelector('[class="chat-wysiwyg-input__editor"] span[data-slate-string="true"]')?.textContent ??
       "";
     const twitch = new Twitch(slug);
-    if (window.hottwitch.id === "" || window.hottwitch.name !== slug) {
-      console.log(window.hottwitch);
+    if (window.hottwitch.id === "" || window.hottwitch.name !== slug)
       twitch.getChannelId(slug).then((id) => {
         window.hottwitch.id = id;
         window.hottwitch.name = slug;
-        console.log(window.hottwitch);
         twitch.sendMessage(`${chat_input.trim()} ${HOTKEYS[event.code]}`);
       });
-    } else twitch.sendMessage(`${chat_input.trim()} ${HOTKEYS[event.code]}`);
+    else twitch.sendMessage(`${chat_input.trim()} ${HOTKEYS[event.code]}`);
   }
 });
 
