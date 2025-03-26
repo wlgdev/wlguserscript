@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         wlgtwitch
 // @namespace    shevernitskiy
-// @version      0.4
+// @version      0.5
 // @description  try to take over the world!
 // @author       shevernitskiy
 // @match        https://dashboard.twitch.tv/u/*/content/video-producer/highlighter/*
@@ -315,7 +315,7 @@ const SELECTOR = {
   LITTLE_TICK: ".timeline-ruler__little-tick",
   TIMELINE_CONTAINER: ".video-timeline__background",
   EMPTY_TIMELINE: '[data-test-selector="empty-timeline"]',
-  TOTAL_DURATION: '[data-a-target="player-seekbar-duration"',
+  TOTAL_DURATION: '[data-a-target="player-seekbar-duration"]',
   BOTTOM_TOOLBAR: '[data-test-selector="video-timeline-bottom-toolbar"]',
   SCALE: '[data-test-selector="video-timeline-bottom-toolbar-zoom-dropdown-menu-button"]',
   OFFSET_CONTIANER: '[data-test-selector="offsetContainer"]',
@@ -353,10 +353,6 @@ function init() {
   const path = window.location.pathname.split("/");
   state.channel = path[2];
   state.vod_id = path.at(-1);
-  state.channel = "welovegames";
-  state.vod_id = "2355792756";
-  state.total_duration = 18939;
-  state.ruller_end = state.total_duration;
   state.cache = new CacheDB("wlgtwitch", "chat");
   injectControls();
   rullerMutationObserver();
@@ -407,8 +403,6 @@ async function tryLoadFromCache() {
   status.textContent = `из кэша ${chat.length}`;
   analyzeAndGenerateSVG();
   attachSVGToTimeline();
-  state.total_duration = 1843;
-  state.ruller_end = state.total_duration;
 }
 function analyzeAndGenerateSVG() {
   console.debug("analyzeAndGenerateSVG");
