@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         wlgboosty
 // @namespace    shevernitskiy
-// @version      0.4
+// @version      0.5
 // @description  try to take over the world!
 // @author       shevernitskiy
 // @match        https://boosty.to/*
@@ -41,7 +41,7 @@ function injectMenu() {
 function openDialog(post_id, post) {
   const videos = Array.from(post.querySelectorAll("[class^=VideoBlock][id]")).map((item) => {
     return {
-      id: item.attributes.getNamedItem("id").nodeValue,
+      id: item.attributes.getNamedItem("id").nodeValue.replace("video-", ""),
       length: item
         .querySelector(".shadow-root-container")
         ?.shadowRoot.querySelector('[data-testid="thumb-timer"]')
@@ -102,7 +102,7 @@ function openDialog(post_id, post) {
   content.textContent = "";
   content.innerHTML =
     `<div><b>post id</b>: ${post_id}</div>` +
-    videos.map((item, index) => `<div><b>video ${index}</b> id: ${item.id}, length: ${item.length}</div>`).join("");
+    videos.map((item, index) => `<div><b>video ${index} id</b>: ${item.id}, length: ${item.length}</div>`).join("");
 
   const textarea = document.createElement("textarea");
   textarea.className = "wlgboosty-timecodes-dialog-textarea";
