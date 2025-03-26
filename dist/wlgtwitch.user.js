@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         wlgtwitch
 // @namespace    shevernitskiy
-// @version      0.3
+// @version      0.4
 // @description  try to take over the world!
 // @author       shevernitskiy
 // @match        https://dashboard.twitch.tv/u/*/content/video-producer/highlighter/*
@@ -353,9 +353,12 @@ function init() {
   const path = window.location.pathname.split("/");
   state.channel = path[2];
   state.vod_id = path.at(-1);
+  state.channel = "welovegames";
+  state.vod_id = "2355792756";
+  state.total_duration = 18939;
+  state.ruller_end = state.total_duration;
   state.cache = new CacheDB("wlgtwitch", "chat");
   injectControls();
-  scaleMutationObserver();
   rullerMutationObserver();
   setTimeout(async () => await tryLoadFromCache(), 500);
 }
@@ -404,6 +407,8 @@ async function tryLoadFromCache() {
   status.textContent = `из кэша ${chat.length}`;
   analyzeAndGenerateSVG();
   attachSVGToTimeline();
+  state.total_duration = 1843;
+  state.ruller_end = state.total_duration;
 }
 function analyzeAndGenerateSVG() {
   console.debug("analyzeAndGenerateSVG");
@@ -431,26 +436,6 @@ function attachSVGToTimeline() {
   const timeline_container = document.querySelector(SELECTOR.TIMELINE_CONTAINER);
   timeline_container.appendChild(timeline);
   timeline_container.appendChild(timeline_lul);
-}
-function scaleMutationObserver() {
-  const parentElement = document.querySelector(
-    '[data-test-selector="video-timeline-bottom-toolbar-zoom-dropdown-menu-button"]',
-  );
-  if (parentElement) {
-    const observer = new MutationObserver((mutationsList) => {
-      for (const mutation of mutationsList) {
-        if (mutation.type !== "characterData") continue;
-        if (mutation.oldValue === mutation.target.textContent) continue;
-        state.scale = mutation.target.textContent ?? "";
-      }
-    });
-    observer.observe(parentElement, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      characterDataOldValue: true,
-    });
-  }
 }
 function rullerMutationObserver() {
   const parentElement = document.querySelector('[data-test-selector="timelineRuler"]');

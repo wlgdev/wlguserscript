@@ -13,7 +13,7 @@ window.hottwitch = {
 };
 
 const HOTKEYS: Record<string, string> = {
-  "Numpad0": "Kappa",
+  "Numpad0": "wlgRolling wlgRolling",
   "Numpad1": "LUL",
   "Numpad2": "",
   "Numpad3": "",
@@ -130,19 +130,37 @@ document.addEventListener("keydown", (event) => {
     event.stopPropagation();
     //@ts-ignore exsits
     const slug = window.navigation.currentEntry.url.split("/").at(-1);
+    const chat_input = document.querySelector<HTMLTextAreaElement>(
+      'textarea[data-a-target="chat-input"]',
+    )?.value ??
+      document.querySelector(
+        '[class="chat-wysiwyg-input__editor"] span[data-slate-string="true"]',
+      )?.textContent ?? "";
     const twitch = new Twitch(slug);
     if (
       window.hottwitch.id === "" || window.hottwitch.name !== slug
     ) {
-      console.log(window.hottwitch);
       twitch.getChannelId(slug).then((id) => {
         window.hottwitch.id = id;
         window.hottwitch.name = slug;
-        console.log(window.hottwitch);
-        twitch.sendMessage(HOTKEYS[event.code]);
+        twitch.sendMessage(
+          `${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${
+            HOTKEYS[event.code]
+          }`,
+        );
+        // if (chat_input && chat_input.value.length > 0) {
+        //   chat_input.value = "";
+        // }
       });
     } else {
-      twitch.sendMessage(HOTKEYS[event.code]);
+      twitch.sendMessage(
+        `${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${
+          HOTKEYS[event.code]
+        }`,
+      );
+      // if (chat_input && chat_input.value.length > 0) {
+      //   chat_input.value = "";
+      // }
     }
   }
 });

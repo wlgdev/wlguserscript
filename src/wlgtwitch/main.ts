@@ -13,10 +13,9 @@ const SELECTOR = {
   LITTLE_TICK: ".timeline-ruler__little-tick",
   TIMELINE_CONTAINER: ".video-timeline__background",
   EMPTY_TIMELINE: '[data-test-selector="empty-timeline"]',
-  TOTAL_DURATION: '[data-a-target="player-seekbar-duration"',
+  TOTAL_DURATION: '[data-a-target="player-seekbar-duration"]',
   BOTTOM_TOOLBAR: '[data-test-selector="video-timeline-bottom-toolbar"]',
-  SCALE:
-    '[data-test-selector="video-timeline-bottom-toolbar-zoom-dropdown-menu-button"]',
+  SCALE: '[data-test-selector="video-timeline-bottom-toolbar-zoom-dropdown-menu-button"]',
   OFFSET_CONTIANER: '[data-test-selector="offsetContainer"]',
 };
 
@@ -52,9 +51,7 @@ setTimeout(() => init(), 5000);
 function init() {
   console.log("INIT");
 
-  state.total_duration = duration(
-    document.querySelector(SELECTOR.TOTAL_DURATION)!.textContent!,
-  ) ?? 1;
+  state.total_duration = duration(document.querySelector(SELECTOR.TOTAL_DURATION)!.textContent!) ?? 1;
   state.ruller_end = state.total_duration;
 
   const path = window.location.pathname.split("/");
@@ -70,7 +67,7 @@ function init() {
   state.cache = new CacheDB<TwitchChatMessage[]>("wlgtwitch", "chat");
 
   injectControls();
-  scaleMutationObserver();
+  // scaleMutationObserver();
   rullerMutationObserver();
   setTimeout(async () => await tryLoadFromCache(), 500);
 }
@@ -96,23 +93,20 @@ function injectControls() {
   controls_status.textContent = "чат не загружен";
 
   controls_download.addEventListener("click", () => {
-    console.debug(
-      "download",
-      state.channel,
-      state.vod_id,
-      state.total_duration,
-    );
+    console.debug("download", state.channel, state.vod_id, state.total_duration);
     downloadChat(
       state.channel,
       state.vod_id,
       state.total_duration,
-      (percent) => controls_status.textContent = `загрузка ${percent}%`,
-    ).then((data) => {
-      console.debug("downloaded total chat messages", data.length);
-      controls_status.textContent = `загружено ${data.length}`;
-      state.chat = data;
-      state.cache.setItem(state.vod_id, data);
-    }).then(analyzeAndGenerateSVG)
+      (percent) => (controls_status.textContent = `загрузка ${percent}%`),
+    )
+      .then((data) => {
+        console.debug("downloaded total chat messages", data.length);
+        controls_status.textContent = `загружено ${data.length}`;
+        state.chat = data;
+        state.cache.setItem(state.vod_id, data);
+      })
+      .then(analyzeAndGenerateSVG)
       .then(attachSVGToTimeline);
   });
 
@@ -167,63 +161,49 @@ function attachSVGToTimeline() {
 
   timeline_lul.innerHTML = `<div style="width: 100%;">${state.svg_lul}</div>`;
 
-  const timeline_container = document.querySelector(
-    SELECTOR.TIMELINE_CONTAINER,
-  )!;
+  const timeline_container = document.querySelector(SELECTOR.TIMELINE_CONTAINER)!;
   timeline_container.appendChild(timeline);
   timeline_container.appendChild(timeline_lul);
 }
 
-function scaleMutationObserver() {
-  const parentElement = document.querySelector(
-    '[data-test-selector="video-timeline-bottom-toolbar-zoom-dropdown-menu-button"]',
-  );
+// function scaleMutationObserver() {
+//   const parentElement = document.querySelector(
+//     '[data-test-selector="video-timeline-bottom-toolbar-zoom-dropdown-menu-button"]',
+//   );
 
-  if (parentElement) {
-    const observer = new MutationObserver((mutationsList) => {
-      for (const mutation of mutationsList) {
-        if (mutation.type !== "characterData") continue;
-        if (mutation.oldValue === mutation.target.textContent) continue;
-        state.scale = mutation.target.textContent ?? "";
-      }
-    });
+//   if (parentElement) {
+//     const observer = new MutationObserver((mutationsList) => {
+//       for (const mutation of mutationsList) {
+//         if (mutation.type !== "characterData") continue;
+//         if (mutation.oldValue === mutation.target.textContent) continue;
+//         state.scale = mutation.target.textContent ?? "";
+//       }
+//     });
 
-    observer.observe(parentElement, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      characterDataOldValue: true,
-    });
-  }
-}
+//     observer.observe(parentElement, {
+//       childList: true,
+//       subtree: true,
+//       characterData: true,
+//       characterDataOldValue: true,
+//     });
+//   }
+// }
 
 function rullerMutationObserver() {
-  const parentElement = document.querySelector(
-    '[data-test-selector="timelineRuler"]',
-  );
-  const offset_container = document.querySelector(
-    SELECTOR.OFFSET_CONTIANER,
-  )!;
+  const parentElement = document.querySelector('[data-test-selector="timelineRuler"]');
+  const offset_container = document.querySelector(SELECTOR.OFFSET_CONTIANER)!;
 
   if (parentElement) {
     const observer = new MutationObserver((mutationsList) => {
-      mutationsList = mutationsList.filter((mutation) =>
-        mutation.type === "characterData"
-      );
+      mutationsList = mutationsList.filter((mutation) => mutation.type === "characterData");
       if (mutationsList.length === 0) return;
       const ruller_start = mutationsList[0].target.textContent!;
       const ruller_start_duration = duration(ruller_start);
       const ruller_end = mutationsList.at(-1)!.target.textContent!;
       const ruller_end_duration = duration(ruller_end);
       const offset_style = offset_container.getAttribute("style")!.split(";");
-      const left = parseInt(
-        offset_style[0].split("left: ")[1].split("%")[0],
-        10,
-      );
-      const width = parseInt(
-        offset_style[1].split("width: ")[1].split("%")[0],
-        10,
-      );
+      const left = parseInt(offset_style[0].split("left: ")[1].split("%")[0], 10);
+      const width = parseInt(offset_style[1].split("width: ")[1].split("%")[0], 10);
 
       console.debug("offsetContainer", left, width);
 
@@ -251,8 +231,7 @@ function rullerMutationObserver() {
     for (const el of els) {
       if (state.offset_container_width >= 400) {
         const start_x = WIDTH * (state.ruller_start / state.total_duration);
-        const width_x = WIDTH *
-          ((state.ruller_end - state.ruller_start) / state.total_duration);
+        const width_x = WIDTH * ((state.ruller_end - state.ruller_start) / state.total_duration);
         el.setAttribute("viewBox", `${start_x} 0 ${width_x} 30`);
 
         console.debug("changeSVGViewBox", `${start_x} 0 ${width_x} 30`);
