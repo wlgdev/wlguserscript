@@ -17,11 +17,11 @@ if (document.readyState === "loading") {
 }
 
 function injectMenu() {
-  for (const post of document.querySelectorAll("[class^=Post_root]")) {
+  for (const post of document.querySelectorAll('[data-test-id="COMMON_POST:ROOT"]')) {
     const post_id = post.attributes.getNamedItem("data-post-id").nodeValue;
-    const videos = Array.from(post.querySelectorAll("[class^=VideoBlock_root]"));
+    const videos = Array.from(post.querySelectorAll("[class^=VideoBlock]"));
     if (!videos.length || videos.length === 0) continue;
-    const header = post.querySelector("[class^=BasePostHeader_headerRightBlock]");
+    const header = post.querySelector("[class*=headerRightBlock]");
     const lock = header.querySelector("[class^=PostAccessLabel_root]");
     if (lock) {
       lock.style.margingRight = "0";
@@ -39,16 +39,16 @@ function injectMenu() {
 }
 
 function openDialog(post_id, post) {
-  const videos = Array.from(post.querySelectorAll("[class^=VideoBlock_root]")).map((item) => {
+  const videos = Array.from(post.querySelectorAll("[class^=VideoBlock][id]")).map((item) => {
     return {
-      id: item.attributes.getNamedItem("id").nodeValue.replaceAll("video-", ""),
+      id: item.attributes.getNamedItem("id").nodeValue,
       length: item
         .querySelector(".shadow-root-container")
         ?.shadowRoot.querySelector('[data-testid="thumb-timer"]')
         ?.textContent.trim(),
     };
   });
-  const app = document.querySelector("[class^=App_app]");
+  const app = document.querySelector("[class^=App]");
 
   const dialog = document.createElement("div");
   dialog.className = "wlgboosty-timecodes-dialog";
