@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         wlghottwitch
 // @namespace    shevernitskiy
-// @version      0.2
+// @version      0.3
 // @description  try to take over the world!
 // @author       shevernitskiy
 // @match        https://twitch.tv/*
@@ -16,16 +16,18 @@ window.hottwitch = {
   name: "",
 };
 const HOTKEYS = {
-  Numpad0: "Kappa",
+  Numpad0: "wlgRolling wlgRolling",
   Numpad1: "LUL",
   Numpad2: "",
   Numpad3: "",
   Numpad4: "",
   Numpad5: "",
-  Numpad6: "",
-  Numpad7: "",
-  Numpad8: "",
-  Numpad9: "",
+};
+const SEQUENCE = {
+  Numpad6: [["wlgR1", "wlgR2", "wlgR3", "wlgR4"], 300],
+  Numpad7: [[], 300],
+  Numpad8: [[], 300],
+  Numpad9: [[], 300],
 };
 const GQL_URL = "https://gql.twitch.tv/gql";
 const CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko";
@@ -105,8 +107,11 @@ var Twitch = class Twitch {
     },
   };
 };
-document.addEventListener("keydown", (event) => {
-  if (HOTKEYS[event.code] && HOTKEYS[event.code].length > 0) {
+document.addEventListener("keydown", async (event) => {
+  if (
+    (HOTKEYS[event.code] && HOTKEYS[event.code].length > 0) ||
+    (SEQUENCE[event.code] && SEQUENCE[event.code][0].length > 0)
+  ) {
     event.preventDefault();
     event.stopPropagation();
     const slug = window.navigation.currentEntry.url.split("/").at(-1);
@@ -116,12 +121,28 @@ document.addEventListener("keydown", (event) => {
       "";
     const twitch = new Twitch(slug);
     if (window.hottwitch.id === "" || window.hottwitch.name !== slug)
-      twitch.getChannelId(slug).then((id) => {
+      twitch.getChannelId(slug).then(async (id) => {
         window.hottwitch.id = id;
         window.hottwitch.name = slug;
-        twitch.sendMessage(`${chat_input.trim()} ${HOTKEYS[event.code]}`);
+        if (HOTKEYS[event.code])
+          twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${HOTKEYS[event.code]}`);
+        else {
+          const [sequence, delay] = SEQUENCE[event.code];
+          for (const message of sequence) {
+            await twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${message}`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          }
+        }
       });
-    else twitch.sendMessage(`${chat_input.trim()} ${HOTKEYS[event.code]}`);
+    else if (HOTKEYS[event.code])
+      twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${HOTKEYS[event.code]}`);
+    else {
+      const [sequence, delay] = SEQUENCE[event.code];
+      for (const message of sequence) {
+        await twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${message}`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
   }
 });
 
