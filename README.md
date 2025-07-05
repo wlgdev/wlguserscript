@@ -65,11 +65,11 @@ To develop and build these userscripts, you will need Deno. To use the pre-built
 
 #### For Development:
 
--   [Deno](https://deno.land/#installation)
+- [Deno](https://deno.land/#installation)
 
 #### For Usage:
 
--   A userscript manager for your browser (e.g., [Tampermonkey](https://www.tampermonkey.net/), [Violentmonkey](https://violentmonkey.github.io/))
+- A userscript manager for your browser (e.g., [Tampermonkey](https://www.tampermonkey.net/), [Violentmonkey](https://violentmonkey.github.io/))
 
 ### Installation
 
@@ -91,5 +91,11 @@ To develop and build these userscripts, you will need Deno. To use the pre-built
 ## ⚠️ How to use
 
 After installation via your userscript manager, the scripts will automatically run on the specified websites. Refer to the individual userscript files in `src/` for details on their functionality and the websites they target.
+
+### Click to install
+
+- [wlgboosty](https://github.com/wlgdev/wlguserscript/raw/refs/heads/main/dist/wlgboosty.user.js)
+- [wlghottwitch](https://github.com/wlgdev/wlguserscript/raw/refs/heads/main/dist/wlghottwitch.user.js)
+- [wlgtwitch](https://github.com/wlgdev/wlguserscript/raw/refs/heads/main/dist/wlgtwitch.user.js)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
