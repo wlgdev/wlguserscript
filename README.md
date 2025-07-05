@@ -78,9 +78,9 @@ To develop and build these userscripts, you will need Deno. To use the pre-built
     git clone https://github.com/wlgdev/wlguserscripts.git
     cd wlguserscripts
     ```
-2.  **Build the userscripts (for development):**
+2.  **Build the userscripts:**
     ```bash
-    deno run -A scripts/bundle.ts
+    deno task build:*
     ```
     This will generate the bundled userscript files in the `dist/` directory.
 3.  **Install userscripts in your browser (for usage):**
