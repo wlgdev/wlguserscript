@@ -1,13 +1,12 @@
 {
   "lock": false,
   "tasks": {
-    "build:twitch": "rolldown src/wlgtwitch/main.ts --format esm --file ./dev/wlgtwitch.user.js",
-    "build:dev:twitch": "rolldown src/wlgtwitch/main.ts --format esm --file ./dev/wlgtwitch.user.js --watch",
-    "build:dev:wlghottwitch": "rolldown src/wlghottwitch/main.ts --format esm --file ./dev/wlghottwitch.user.js --watch"
+    "build:wlgtwitch": "deno run -A ./scripts/bundle.ts --source=./src/wlgtwitch/main.ts --target=./dist/wlgtwitch.user.js --bump",
+    "build:wlghottwitch": "deno run -A ./scripts/bundle.ts --source=./src/wlghottwitch/main.ts --target=./dist/wlghottwitch.user.js --bump",
+    "build:wlgboosty": "deno run -A ./scripts/bundle.ts --source=./src/wlgboosty/main.ts --target=./dist/wlgboosty.user.js --bump"
   },
   "imports": {
-    "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.33",
-    "rolldown": "npm:rolldown@^1.0.0-beta.3-commit.fc7dd8c"
+    "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.33"
   },
   "compilerOptions": {
     "lib": ["deno.ns", "dom", "dom.iterable", "esnext"]

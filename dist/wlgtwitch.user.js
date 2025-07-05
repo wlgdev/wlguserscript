@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         wlgtwitch
 // @namespace    shevernitskiy
-// @version      0.5
+// @version      0.6
 // @description  try to take over the world!
 // @author       shevernitskiy
 // @match        https://dashboard.twitch.tv/u/*/content/video-producer/highlighter/*
 // @grant        none
 // ==/UserScript==
 
-//#region src/wlgtwitch/analyze-chat.ts
+// src/wlgtwitch/analyze-chat.ts
 function analyzeChat(chatHistory, timeframe_seconds = 60) {
   const items = {};
   let max = 0;
@@ -19,22 +19,27 @@ function analyzeChat(chatHistory, timeframe_seconds = 60) {
     const timeframe = Math.floor(message.offset / timeframe_seconds);
     if (items[timeframe]) {
       items[timeframe].value++;
-      if (items[timeframe].value > max) max = items[timeframe].value;
-      if (items[timeframe].value < min) min = items[timeframe].value;
-    } else
+      if (items[timeframe].value > max) {
+        max = items[timeframe].value;
+      }
+      if (items[timeframe].value < min) {
+        min = items[timeframe].value;
+      }
+    } else {
       items[timeframe] = {
         value: 1,
         deviation: 0,
         deviation_abs: 0,
-        offset: message.offset,
+        offset: message.offset
       };
+    }
   }
   return {
     items,
     max,
     min,
     total_messages,
-    ...metaStats(items),
+    ...metaStats(items)
   };
 }
 function analyzeChatLUL(chatHistory, timeframe_seconds = 60) {
@@ -46,23 +51,32 @@ function analyzeChatLUL(chatHistory, timeframe_seconds = 60) {
     total_messages++;
     const timeframe = Math.floor(message.offset / timeframe_seconds);
     if (items[timeframe]) {
-      for (const emote of message.emotes) if (emote.text === "LUL") items[timeframe].value++;
-      if (items[timeframe].value > max) max = items[timeframe].value;
-      if (items[timeframe].value < min) min = items[timeframe].value;
-    } else
+      for (const emote of message.emotes) {
+        if (emote.text === "LUL") {
+          items[timeframe].value++;
+        }
+      }
+      if (items[timeframe].value > max) {
+        max = items[timeframe].value;
+      }
+      if (items[timeframe].value < min) {
+        min = items[timeframe].value;
+      }
+    } else {
       items[timeframe] = {
         value: 1,
         deviation: 0,
         deviation_abs: 0,
-        offset: message.offset,
+        offset: message.offset
       };
+    }
   }
   return {
     items,
     max,
     min,
     total_messages,
-    ...metaStats(items),
+    ...metaStats(items)
   };
 }
 function metaStats(items) {
@@ -80,40 +94,45 @@ function metaStats(items) {
     total_frames++;
     items[timeframe_key].deviation_abs = items[timeframe_key].value - avg;
     items[timeframe_key].deviation = items[timeframe_key].deviation_abs / avg;
-    if (items[timeframe_key].deviation > max_deviation) max_deviation = items[timeframe_key].deviation;
-    if (items[timeframe_key].deviation < min_deviation) min_deviation = items[timeframe_key].deviation;
+    if (items[timeframe_key].deviation > max_deviation) {
+      max_deviation = items[timeframe_key].deviation;
+    }
+    if (items[timeframe_key].deviation < min_deviation) {
+      min_deviation = items[timeframe_key].deviation;
+    }
   }
   return {
     avg,
     max_deviation,
     min_deviation,
-    total_frames,
+    total_frames
   };
 }
 
-//#endregion
-//#region src/wlgtwitch/chat-downloader.ts
-const GQL_URL = "https://gql.twitch.tv/gql";
-const CLIENT_ID = "kd1unb4b3q4t58fwlpcbzcbnm76a8fp";
-var Twitch = class Twitch {
+// src/wlgtwitch/chat-downloader.ts
+var GQL_URL = "https://gql.twitch.tv/gql";
+var CLIENT_ID = "kd1unb4b3q4t58fwlpcbzcbnm76a8fp";
+var Twitch = class _Twitch {
+  channel;
+  channel_id;
   constructor(channel, channel_id) {
     this.channel = channel;
     this.channel_id = channel_id;
   }
+  // deno-lint-ignore no-explicit-any
   static async gql(execute, device_id) {
     const headers = new Headers();
     headers.set("Client-Id", CLIENT_ID);
     headers.set("Accept", "application/json");
-    headers.set(
-      "User-Agent",
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
-    );
-    if (device_id) headers.set("X-Device-Id", device_id);
+    headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36");
+    if (device_id) {
+      headers.set("X-Device-Id", device_id);
+    }
     const res = await fetch(GQL_URL, {
       headers,
       method: "POST",
       body: JSON.stringify(execute),
-      signal: AbortSignal.timeout(1e4),
+      signal: AbortSignal.timeout(1e4)
     });
     const data = await res.json();
     return data;
@@ -123,10 +142,8 @@ var Twitch = class Twitch {
     let br = false;
     let prev = -Infinity;
     while (!br) {
-      const [res] = await Twitch.gql([
-        ncursor === ""
-          ? Twitch.request.VideoCommentsByOffset(vod_id, start)
-          : Twitch.request.VideoCommentsByCursor(vod_id, ncursor),
+      const [res] = await _Twitch.gql([
+        ncursor === "" ? _Twitch.request.VideoCommentsByOffset(vod_id, start) : _Twitch.request.VideoCommentsByCursor(vod_id, ncursor)
       ]);
       for (const { node, cursor } of res.data.video.comments.edges) {
         if (node.contentOffsetSeconds > end || node.contentOffsetSeconds < prev) {
@@ -138,11 +155,12 @@ var Twitch = class Twitch {
         let message = "";
         const emotes = [];
         for (const fragment of node.message.fragments) {
-          if (fragment.emote)
+          if (fragment.emote) {
             emotes.push({
               id: fragment.emote.emoteID,
-              text: fragment.text,
+              text: fragment.text
             });
+          }
           message += fragment.text;
         }
         yield {
@@ -152,9 +170,10 @@ var Twitch = class Twitch {
           user_name: node.commenter?.displayName,
           user_id: node.id,
           user_color: node.message.userColor,
+          // deno-lint-ignore no-explicit-any
           badges: node.message.userBadges.map((badge) => `${badge.setID}${badge.version}`),
           message,
-          emotes,
+          emotes
         };
       }
       if (res.data.video.comments.pageInfo.hasNextPage !== true) break;
@@ -165,9 +184,9 @@ var Twitch = class Twitch {
       extensions: {
         persistedQuery: {
           version,
-          sha256Hash: sha,
-        },
-      },
+          sha256Hash: sha
+        }
+      }
     };
   }
   static request = {
@@ -176,9 +195,9 @@ var Twitch = class Twitch {
         operationName: "VideoCommentsByOffsetOrCursor",
         variables: {
           videoID: vod_id,
-          contentOffsetSeconds: offset,
+          contentOffsetSeconds: offset
         },
-        ...Twitch.ext("b70a3591ff0f4e0313d126c6a1502d79a1c02baebb288227c582044aa76adf6a"),
+        ..._Twitch.ext("b70a3591ff0f4e0313d126c6a1502d79a1c02baebb288227c582044aa76adf6a")
       };
     },
     VideoCommentsByCursor: (vod_id, cursor) => {
@@ -186,11 +205,11 @@ var Twitch = class Twitch {
         operationName: "VideoCommentsByOffsetOrCursor",
         variables: {
           videoID: vod_id,
-          cursor,
+          cursor
         },
-        ...Twitch.ext("b70a3591ff0f4e0313d126c6a1502d79a1c02baebb288227c582044aa76adf6a"),
+        ..._Twitch.ext("b70a3591ff0f4e0313d126c6a1502d79a1c02baebb288227c582044aa76adf6a")
       };
-    },
+    }
   };
 };
 async function downloadChat(channel, vod_id, total_length, on_progress) {
@@ -198,13 +217,14 @@ async function downloadChat(channel, vod_id, total_length, on_progress) {
   const data = [];
   for await (const chunk of twitch.vodChat(vod_id)) {
     data.push(chunk);
-    if (on_progress) on_progress(Math.floor((chunk.offset * 100) / total_length));
+    if (on_progress) {
+      on_progress(Math.floor(chunk.offset * 100 / total_length));
+    }
   }
   return data;
 }
 
-//#endregion
-//#region src/wlgtwitch/timeline-svg.ts
+// src/wlgtwitch/timeline-svg.ts
 function createTimelineSVG(chat, svgWidth = 4e3, svgHeight = 30) {
   const rectWidth = svgWidth / chat.total_frames;
   const rectHeight = svgHeight;
@@ -231,8 +251,7 @@ function getLimeGreenToRedOrange(normalizedDeviation) {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
-//#endregion
-//#region src/wlgtwitch/utils.ts
+// src/wlgtwitch/utils.ts
 function duration(time_string) {
   let offset = 0;
   let pow = 0;
@@ -243,13 +262,15 @@ function duration(time_string) {
   return offset;
 }
 
-//#endregion
-//#region src/wlgtwitch/cache.ts
+// src/wlgtwitch/cache.ts
 var CacheDB = class {
-  db = null;
+  tag;
+  table;
+  db;
   constructor(tag, table) {
     this.tag = tag;
     this.table = table;
+    this.db = null;
     this.openDatabase();
   }
   openDatabase() {
@@ -263,53 +284,64 @@ var CacheDB = class {
     };
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
-      if (!db.objectStoreNames.contains(this.table)) db.createObjectStore(this.table, { keyPath: "key" });
+      if (!db.objectStoreNames.contains(this.table)) {
+        db.createObjectStore(this.table, {
+          keyPath: "key"
+        });
+      }
     };
   }
   getItem(key) {
     console.log("getItem", key);
     return new Promise((resolve, reject) => {
-      if (!this.db) return resolve(void 0);
-      const transaction = this.db.transaction([this.table], "readonly");
+      if (!this.db) {
+        return resolve(void 0);
+      }
+      const transaction = this.db.transaction([
+        this.table
+      ], "readonly");
       const objectStore = transaction.objectStore(this.table);
       const request = objectStore.get(key);
       request.onsuccess = (event) => {
-        const request$1 = event.target;
-        const retrievedValue = request$1.result?.value;
+        const request2 = event.target;
+        const retrievedValue = request2.result?.value;
         resolve(retrievedValue);
       };
       request.onerror = (event) => {
-        const request$1 = event.target;
-        console.error("Error retrieving item:", request$1.error);
-        reject(request$1.error);
+        const request2 = event.target;
+        console.error("Error retrieving item:", request2.error);
+        reject(request2.error);
       };
     });
   }
   setItem(key, value) {
     return new Promise((resolve, reject) => {
-      if (!this.db) return resolve();
-      const transaction = this.db.transaction([this.table], "readwrite");
+      if (!this.db) {
+        return resolve();
+      }
+      const transaction = this.db.transaction([
+        this.table
+      ], "readwrite");
       const objectStore = transaction.objectStore(this.table);
       const request = objectStore.put({
         key,
-        value,
+        value
       });
       request.onsuccess = () => {
         resolve();
       };
       request.onerror = (event) => {
-        const request$1 = event.target;
-        console.error("Error storing item:", request$1.error);
-        reject(request$1.error);
+        const request2 = event.target;
+        console.error("Error storing item:", request2.error);
+        reject(request2.error);
       };
     });
   }
 };
 
-//#endregion
-//#region src/wlgtwitch/main.ts
+// src/wlgtwitch/main.ts
 console.log("wlgtwitch.ts");
-const SELECTOR = {
+var SELECTOR = {
   RULER: ".timeline-ruler__tick-container--pins",
   BIG_TICK: ".timeline-ruler__big-tick",
   LITTLE_TICK: ".timeline-ruler__little-tick",
@@ -318,14 +350,14 @@ const SELECTOR = {
   TOTAL_DURATION: '[data-a-target="player-seekbar-duration"]',
   BOTTOM_TOOLBAR: '[data-test-selector="video-timeline-bottom-toolbar"]',
   SCALE: '[data-test-selector="video-timeline-bottom-toolbar-zoom-dropdown-menu-button"]',
-  OFFSET_CONTIANER: '[data-test-selector="offsetContainer"]',
+  OFFSET_CONTIANER: '[data-test-selector="offsetContainer"]'
 };
-const STYLE = {
+var STYLE = {
   BUTTON: "iumXyx",
   TOOLBAR_ROW: "fxSMTS",
-  TOOLBAR_STATUS: "kfTsqn",
+  TOOLBAR_STATUS: "kfTsqn"
 };
-const state = {
+var state = {
   total_duration: 1,
   channel: "",
   vod_id: "",
@@ -337,13 +369,13 @@ const state = {
   analyzed_lul: {},
   svg: "",
   svg_lul: "",
-  scale: "Полная длина",
+  scale: "\u041F\u043E\u043B\u043D\u0430\u044F \u0434\u043B\u0438\u043D\u0430",
   cache: void 0,
   mode: "default",
   offset_container_left: Infinity,
   offset_container_width: -Infinity,
   ruller_start: 0,
-  ruller_end: 1,
+  ruller_end: 1
 };
 setTimeout(() => init(), 5e3);
 function init() {
@@ -365,42 +397,36 @@ function injectControls() {
   controls.style.gap = "10px";
   const controls_download = document.createElement("button");
   controls_download.classList.add(STYLE.BUTTON);
-  controls_download.textContent = "🡇";
+  controls_download.textContent = "\u{1F847}";
   controls_download.style.padding = "0 10px";
   controls_download.style.width = "25px";
   const controls_status = document.createElement("div");
   controls_status.id = state.status;
   controls_status.classList.add(STYLE.TOOLBAR_STATUS);
   controls_status.style.width = "150px";
-  controls_status.textContent = "чат не загружен";
+  controls_status.textContent = "\u0447\u0430\u0442 \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D";
   controls_download.addEventListener("click", () => {
     console.debug("download", state.channel, state.vod_id, state.total_duration);
-    downloadChat(
-      state.channel,
-      state.vod_id,
-      state.total_duration,
-      (percent) => (controls_status.textContent = `загрузка ${percent}%`),
-    )
-      .then((data) => {
-        console.debug("downloaded total chat messages", data.length);
-        controls_status.textContent = `загружено ${data.length}`;
-        state.chat = data;
-        state.cache.setItem(state.vod_id, data);
-      })
-      .then(analyzeAndGenerateSVG)
-      .then(attachSVGToTimeline);
+    downloadChat(state.channel, state.vod_id, state.total_duration, (percent) => controls_status.textContent = `\u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0430 ${percent}%`).then((data) => {
+      console.debug("downloaded total chat messages", data.length);
+      controls_status.textContent = `\u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043E ${data.length}`;
+      state.chat = data;
+      state.cache.setItem(state.vod_id, data);
+    }).then(analyzeAndGenerateSVG).then(attachSVGToTimeline);
   });
   controls.appendChild(controls_download);
   controls.appendChild(controls_status);
   bottom_toolbar.appendChild(controls);
 }
 async function tryLoadFromCache() {
-  if (state.cache.db === null) throw new Error("CacheDB is not initialized");
+  if (state.cache.db === null) {
+    throw new Error("CacheDB is not initialized");
+  }
   const chat = await state.cache.getItem(state.vod_id);
   if (!chat) return;
   state.chat = chat;
   const status = document.getElementById(state.status);
-  status.textContent = `из кэша ${chat.length}`;
+  status.textContent = `\u0438\u0437 \u043A\u044D\u0448\u0430 ${chat.length}`;
   analyzeAndGenerateSVG();
   attachSVGToTimeline();
 }
@@ -456,14 +482,14 @@ function rullerMutationObserver() {
       childList: true,
       subtree: true,
       characterData: true,
-      characterDataOldValue: true,
+      characterDataOldValue: true
     });
   }
   function changeSVGViewBox() {
     const WIDTH = 4e3;
     const els = document.querySelectorAll(".chat-svg");
     if (!els || els.length === 0) return;
-    for (const el of els)
+    for (const el of els) {
       if (state.offset_container_width >= 400) {
         const start_x = WIDTH * (state.ruller_start / state.total_duration);
         const width_x = WIDTH * ((state.ruller_end - state.ruller_start) / state.total_duration);
@@ -473,7 +499,6 @@ function rullerMutationObserver() {
         el.setAttribute("viewBox", `0 0 ${WIDTH} 30`);
         console.debug("changeSVGViewBox Default", `0 0 ${WIDTH} 30`);
       }
+    }
   }
 }
-
-//#endregion

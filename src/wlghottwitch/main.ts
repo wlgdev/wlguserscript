@@ -13,16 +13,19 @@ window.hottwitch = {
 };
 
 const HOTKEYS: Record<string, string> = {
-  "Numpad0": "wlgRolling wlgRolling",
-  "Numpad1": "LUL",
-  "Numpad2": "",
-  "Numpad3": "",
-  "Numpad4": "",
-  "Numpad5": "",
-  "Numpad6": "",
-  "Numpad7": "",
-  "Numpad8": "",
-  "Numpad9": "",
+  Numpad0: "wlgRolling wlgRolling",
+  Numpad1: "LUL",
+  Numpad2: "",
+  Numpad3: "",
+  Numpad4: "",
+  Numpad5: "",
+};
+
+const SEQUENCE: Record<string, [string[], number]> = {
+  Numpad6: [["wlgR1", "wlgR2", "wlgR3", "wlgR4"], 300],
+  Numpad7: [[], 300],
+  Numpad8: [[], 300],
+  Numpad9: [[], 300],
 };
 
 const GQL_URL = "https://gql.twitch.tv/gql" as const;
@@ -100,9 +103,7 @@ class Twitch {
           channelLogin: channel,
         },
 
-        ...Twitch.ext(
-          "639d5f11bfb8bf3053b424d9ef650d04c4ebb7d94711d644afb08fe9a0fad5d9",
-        ),
+        ...Twitch.ext("639d5f11bfb8bf3053b424d9ef650d04c4ebb7d94711d644afb08fe9a0fad5d9"),
       };
     },
     sendChatMessage: (message: string) => {
@@ -116,51 +117,50 @@ class Twitch {
             replyParentMessageID: null,
           },
         },
-        ...Twitch.ext(
-          "0435464292cf380ed4b3d905e4edcb73078362e82c06367a5b2181c76c822fa2",
-        ),
+        ...Twitch.ext("0435464292cf380ed4b3d905e4edcb73078362e82c06367a5b2181c76c822fa2"),
       };
     },
   };
 }
 
-document.addEventListener("keydown", (event) => {
-  if (HOTKEYS[event.code] && HOTKEYS[event.code].length > 0) {
+document.addEventListener("keydown", async (event) => {
+  if (
+    (HOTKEYS[event.code] && HOTKEYS[event.code].length > 0) ||
+    (SEQUENCE[event.code] && SEQUENCE[event.code][0].length > 0)
+  ) {
     event.preventDefault();
     event.stopPropagation();
     //@ts-ignore exsits
     const slug = window.navigation.currentEntry.url.split("/").at(-1);
-    const chat_input = document.querySelector<HTMLTextAreaElement>(
-      'textarea[data-a-target="chat-input"]',
-    )?.value ??
-      document.querySelector(
-        '[class="chat-wysiwyg-input__editor"] span[data-slate-string="true"]',
-      )?.textContent ?? "";
+    const chat_input =
+      document.querySelector<HTMLTextAreaElement>('textarea[data-a-target="chat-input"]')?.value ??
+      document.querySelector('[class="chat-wysiwyg-input__editor"] span[data-slate-string="true"]')?.textContent ??
+      "";
     const twitch = new Twitch(slug);
-    if (
-      window.hottwitch.id === "" || window.hottwitch.name !== slug
-    ) {
-      twitch.getChannelId(slug).then((id) => {
+    if (window.hottwitch.id === "" || window.hottwitch.name !== slug) {
+      twitch.getChannelId(slug).then(async (id) => {
         window.hottwitch.id = id;
         window.hottwitch.name = slug;
-        twitch.sendMessage(
-          `${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${
-            HOTKEYS[event.code]
-          }`,
-        );
-        // if (chat_input && chat_input.value.length > 0) {
-        //   chat_input.value = "";
-        // }
+        if (HOTKEYS[event.code]) {
+          twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${HOTKEYS[event.code]}`);
+        } else {
+          const [sequence, delay] = SEQUENCE[event.code];
+          for (const message of sequence) {
+            await twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${message}`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          }
+        }
       });
     } else {
-      twitch.sendMessage(
-        `${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${
-          HOTKEYS[event.code]
-        }`,
-      );
-      // if (chat_input && chat_input.value.length > 0) {
-      //   chat_input.value = "";
-      // }
+      if (HOTKEYS[event.code]) {
+        twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${HOTKEYS[event.code]}`);
+      } else {
+        const [sequence, delay] = SEQUENCE[event.code];
+        for (const message of sequence) {
+          await twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${message}`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
     }
   }
 });

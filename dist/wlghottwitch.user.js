@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         wlghottwitch
 // @namespace    shevernitskiy
-// @version      0.3
+// @version      0.4
 // @description  try to take over the world!
 // @author       shevernitskiy
 // @match        https://twitch.tv/*
@@ -9,28 +9,45 @@
 // @grant        none
 // ==/UserScript==
 
-//#region src/wlghottwitch/main.ts
+// src/wlghottwitch/main.ts
 console.log("hottwitch.ts");
 window.hottwitch = {
   id: "",
-  name: "",
+  name: ""
 };
-const HOTKEYS = {
+var HOTKEYS = {
   Numpad0: "wlgRolling wlgRolling",
   Numpad1: "LUL",
   Numpad2: "",
   Numpad3: "",
   Numpad4: "",
-  Numpad5: "",
+  Numpad5: ""
 };
-const SEQUENCE = {
-  Numpad6: [["wlgR1", "wlgR2", "wlgR3", "wlgR4"], 300],
-  Numpad7: [[], 300],
-  Numpad8: [[], 300],
-  Numpad9: [[], 300],
+var SEQUENCE = {
+  Numpad6: [
+    [
+      "wlgR1",
+      "wlgR2",
+      "wlgR3",
+      "wlgR4"
+    ],
+    300
+  ],
+  Numpad7: [
+    [],
+    300
+  ],
+  Numpad8: [
+    [],
+    300
+  ],
+  Numpad9: [
+    [],
+    300
+  ]
 };
-const GQL_URL = "https://gql.twitch.tv/gql";
-const CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko";
+var GQL_URL = "https://gql.twitch.tv/gql";
+var CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko";
 function nonce() {
   const nonceArray = new Uint8Array(16);
   window.crypto.getRandomValues(nonceArray);
@@ -41,36 +58,42 @@ function nonce() {
   }
   return nonceString;
 }
-var Twitch = class Twitch {
+var Twitch = class _Twitch {
+  channel;
+  channel_id;
   constructor(channel, channel_id) {
     this.channel = channel;
     this.channel_id = channel_id;
   }
+  // deno-lint-ignore no-explicit-any
   static async gql(execute, device_id) {
     const headers = new Headers();
     headers.set("Client-Id", CLIENT_ID);
     headers.set("Accept", "application/json");
-    headers.set(
-      "User-Agent",
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
-    );
+    headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36");
     headers.set("Authorization", `OAuth ${window.cookies["auth-token"]}`);
-    if (device_id) headers.set("X-Device-Id", device_id);
+    if (device_id) {
+      headers.set("X-Device-Id", device_id);
+    }
     const res = await fetch(GQL_URL, {
       headers,
       method: "POST",
       body: JSON.stringify(execute),
-      signal: AbortSignal.timeout(1e4),
+      signal: AbortSignal.timeout(1e4)
     });
     const data = await res.json();
     return data;
   }
   async sendMessage(message) {
-    const res = await Twitch.gql([Twitch.request.sendChatMessage(message)]);
+    const res = await _Twitch.gql([
+      _Twitch.request.sendChatMessage(message)
+    ]);
     console.log(res);
   }
   async getChannelId(channel) {
-    const [res] = await Twitch.gql([Twitch.request.UseLive(channel)]);
+    const [res] = await _Twitch.gql([
+      _Twitch.request.UseLive(channel)
+    ]);
     return res.data.user.id;
   }
   static ext(sha, version = 1) {
@@ -78,17 +101,19 @@ var Twitch = class Twitch {
       extensions: {
         persistedQuery: {
           version,
-          sha256Hash: sha,
-        },
-      },
+          sha256Hash: sha
+        }
+      }
     };
   }
   static request = {
     UseLive: (channel) => {
       return {
         operationName: "UseLive",
-        variables: { channelLogin: channel },
-        ...Twitch.ext("639d5f11bfb8bf3053b424d9ef650d04c4ebb7d94711d644afb08fe9a0fad5d9"),
+        variables: {
+          channelLogin: channel
+        },
+        ..._Twitch.ext("639d5f11bfb8bf3053b424d9ef650d04c4ebb7d94711d644afb08fe9a0fad5d9")
       };
     },
     sendChatMessage: (message) => {
@@ -99,34 +124,28 @@ var Twitch = class Twitch {
             channelID: window.hottwitch.id,
             message,
             nonce: nonce(),
-            replyParentMessageID: null,
-          },
+            replyParentMessageID: null
+          }
         },
-        ...Twitch.ext("0435464292cf380ed4b3d905e4edcb73078362e82c06367a5b2181c76c822fa2"),
+        ..._Twitch.ext("0435464292cf380ed4b3d905e4edcb73078362e82c06367a5b2181c76c822fa2")
       };
-    },
+    }
   };
 };
 document.addEventListener("keydown", async (event) => {
-  if (
-    (HOTKEYS[event.code] && HOTKEYS[event.code].length > 0) ||
-    (SEQUENCE[event.code] && SEQUENCE[event.code][0].length > 0)
-  ) {
+  if (HOTKEYS[event.code] && HOTKEYS[event.code].length > 0 || SEQUENCE[event.code] && SEQUENCE[event.code][0].length > 0) {
     event.preventDefault();
     event.stopPropagation();
     const slug = window.navigation.currentEntry.url.split("/").at(-1);
-    const chat_input =
-      document.querySelector('textarea[data-a-target="chat-input"]')?.value ??
-      document.querySelector('[class="chat-wysiwyg-input__editor"] span[data-slate-string="true"]')?.textContent ??
-      "";
+    const chat_input = document.querySelector('textarea[data-a-target="chat-input"]')?.value ?? document.querySelector('[class="chat-wysiwyg-input__editor"] span[data-slate-string="true"]')?.textContent ?? "";
     const twitch = new Twitch(slug);
-    if (window.hottwitch.id === "" || window.hottwitch.name !== slug)
+    if (window.hottwitch.id === "" || window.hottwitch.name !== slug) {
       twitch.getChannelId(slug).then(async (id) => {
         window.hottwitch.id = id;
         window.hottwitch.name = slug;
-        if (HOTKEYS[event.code])
+        if (HOTKEYS[event.code]) {
           twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${HOTKEYS[event.code]}`);
-        else {
+        } else {
           const [sequence, delay] = SEQUENCE[event.code];
           for (const message of sequence) {
             await twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${message}`);
@@ -134,16 +153,16 @@ document.addEventListener("keydown", async (event) => {
           }
         }
       });
-    else if (HOTKEYS[event.code])
-      twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${HOTKEYS[event.code]}`);
-    else {
-      const [sequence, delay] = SEQUENCE[event.code];
-      for (const message of sequence) {
-        await twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${message}`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+    } else {
+      if (HOTKEYS[event.code]) {
+        twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${HOTKEYS[event.code]}`);
+      } else {
+        const [sequence, delay] = SEQUENCE[event.code];
+        for (const message of sequence) {
+          await twitch.sendMessage(`${chat_input.length > 0 ? chat_input.trim() + " " : ""} ${message}`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
       }
     }
   }
 });
-
-//#endregion
