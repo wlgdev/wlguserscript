@@ -76,7 +76,7 @@ function convertToCSV(data: StreamData[]): string {
   const headers = Object.keys(data[0]);
   const csvRows: string[] = [];
 
-  csvRows.push(headers.join(","));
+  csvRows.push(headers.join(";"));
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
@@ -88,14 +88,14 @@ function convertToCSV(data: StreamData[]): string {
 
       let stringValue = value === null || value === undefined ? "" : String(value);
 
-      if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
+      if (stringValue.includes(";") || stringValue.includes('"') || stringValue.includes("\n")) {
         stringValue = `"${stringValue.replace(/"/g, '""')}"`;
       }
 
       values.push(stringValue);
     }
 
-    csvRows.push(values.join(","));
+    csvRows.push(values.join(";"));
   }
 
   return csvRows.join("\n");
@@ -122,6 +122,10 @@ function downloadFile(content: string, filename: string): void {
 }
 
 function onInit(): void {
+  if (!/^\/[^\/]+\/streams\/?$/.test(window.location.pathname)) {
+    return;
+  }
+
   const downloadButton = document.createElement("li");
   const a = document.createElement("a");
 

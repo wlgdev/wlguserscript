@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         twitchtracker
 // @namespace    shevernitskiy
-// @version      0.4
+// @version      0.5
 // @description  try to take over the world!
 // @author       shevernitskiy
 // @match        https://twitchtracker.com/*
@@ -61,7 +61,7 @@ function convertToCSV(data) {
   if (data.length === 0) return "";
   const headers = Object.keys(data[0]);
   const csvRows = [];
-  csvRows.push(headers.join(","));
+  csvRows.push(headers.join(";"));
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
     const values = [];
@@ -69,12 +69,12 @@ function convertToCSV(data) {
       const key = headers[j];
       const value = row[key];
       let stringValue = value === null || value === void 0 ? "" : String(value);
-      if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
+      if (stringValue.includes(";") || stringValue.includes('"') || stringValue.includes("\n")) {
         stringValue = `"${stringValue.replace(/"/g, '""')}"`;
       }
       values.push(stringValue);
     }
-    csvRows.push(values.join(","));
+    csvRows.push(values.join(";"));
   }
   return csvRows.join("\n");
 }
@@ -98,6 +98,9 @@ function downloadFile(content, filename) {
   URL.revokeObjectURL(url);
 }
 function onInit() {
+  if (!/^\/[^\/]+\/streams\/?$/.test(window.location.pathname)) {
+    return;
+  }
   const downloadButton = document.createElement("li");
   const a = document.createElement("a");
   a.href = "javascript:void(0)";
