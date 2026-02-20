@@ -3,7 +3,8 @@
   "tasks": {
     "build:wlgtwitch": "deno run -A ./scripts/bundle.ts --source=./src/wlgtwitch/main.ts --target=./dist/wlgtwitch.user.js --bump",
     "build:wlghottwitch": "deno run -A ./scripts/bundle.ts --source=./src/wlghottwitch/main.ts --target=./dist/wlghottwitch.user.js --bump",
-    "build:wlgboosty": "deno run -A ./scripts/bundle.ts --source=./src/wlgboosty/main.ts --target=./dist/wlgboosty.user.js --bump"
+    "build:wlgboosty": "deno run -A ./scripts/bundle.ts --source=./src/wlgboosty/main.ts --target=./dist/wlgboosty.user.js --bump",
+    "build:twitchtracker": "deno run -A ./scripts/bundle.ts --source=./src/twitchtracker/main.ts --target=./dist/twitchtracker.user.js --bump"
   },
   "imports": {
     "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.33"
